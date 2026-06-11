@@ -1,0 +1,67 @@
+<script type="text/javascript">
+  RED.nodes.registerType("udp-out", {
+    category: "tcpip",
+    color: "#4A90D9",
+    defaults: {
+      name: { value: "" },
+      host: { value: "", required: false },
+      port: { value: "", validate: function (v) { return v === "" || !isNaN(parseInt(v, 10)); } },
+      broadcast: { value: false },
+      multicastTtl: { value: "" }
+    },
+    inputs: 1,
+    outputs: 1,
+    outputLabels: ["events"],
+    icon: "font-awesome/fa-upload",
+    label: function () {
+      return this.name || (this.host ? "udp out " + this.host + ":" + this.port : "udp out");
+    },
+    paletteLabel: "udp out"
+  });
+</script>
+
+<script type="text/html" data-template-name="udp-out">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name" />
+  </div>
+  <div class="form-row">
+    <label for="node-input-host"><i class="fa fa-server"></i> Host</label>
+    <input type="text" id="node-input-host" placeholder="destination host — overridable via msg.host" />
+  </div>
+  <div class="form-row">
+    <label for="node-input-port"><i class="fa fa-hashtag"></i> Port</label>
+    <input type="text" id="node-input-port" placeholder="destination port — overridable via msg.port" />
+  </div>
+  <div class="form-row">
+    <label for="node-input-broadcast" style="width:auto"><i class="fa fa-bullhorn"></i> Enable broadcast (SO_BROADCAST)</label>
+    <input type="checkbox" id="node-input-broadcast" style="display:inline-block; width:auto; vertical-align:top;" />
+  </div>
+  <div class="form-row">
+    <label for="node-input-multicastTtl"><i class="fa fa-sitemap"></i> Multicast TTL</label>
+    <input type="text" id="node-input-multicastTtl" placeholder="TTL for multicast sends (optional)" />
+  </div>
+</script>
+
+<script type="text/html" data-help-name="udp-out">
+  <p>Sends <b>UDP/IPv4</b> datagrams. Supports unicast, multicast (set a TTL and use a
+  multicast destination address) and broadcast (enable broadcast and send to a
+  broadcast address such as <code>255.255.255.255</code>).</p>
+
+  <h3>Inputs</h3>
+  <dl class="message-properties">
+    <dt>payload <span class="property-type">string | Buffer</span></dt>
+    <dd>The datagram contents.</dd>
+    <dt class="optional">host <span class="property-type">string</span></dt>
+    <dd>Overrides the configured destination host.</dd>
+    <dt class="optional">port <span class="property-type">number</span></dt>
+    <dd>Overrides the configured destination port.</dd>
+  </dl>
+
+  <h3>Outputs</h3>
+  <ol class="node-ports">
+    <li>Events — a <code>sent</code> acknowledgement (with <code>bytes</code>) or an
+      error envelope (<code>SEND_INVALID</code>, <code>PAYLOAD_INVALID</code>,
+      <code>UDP_SEND_FAILED</code>).</li>
+  </ol>
+</script>

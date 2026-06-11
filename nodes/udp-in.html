@@ -1,0 +1,70 @@
+<script type="text/javascript">
+  RED.nodes.registerType("udp-in", {
+    category: "tcpip",
+    color: "#4A90D9",
+    defaults: {
+      name: { value: "" },
+      port: { value: "", required: true, validate: RED.validators.number() },
+      address: { value: "" },
+      multicastGroup: { value: "" },
+      mode: { value: "binary" },
+      reuseAddr: { value: true }
+    },
+    inputs: 0,
+    outputs: 2,
+    outputLabels: ["events", "data"],
+    icon: "font-awesome/fa-download",
+    label: function () {
+      return this.name || (this.port ? "udp in :" + this.port : "udp in");
+    },
+    paletteLabel: "udp in"
+  });
+</script>
+
+<script type="text/html" data-template-name="udp-in">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name" />
+  </div>
+  <div class="form-row">
+    <label for="node-input-port"><i class="fa fa-hashtag"></i> Port</label>
+    <input type="text" id="node-input-port" placeholder="local port to listen on" />
+  </div>
+  <div class="form-row">
+    <label for="node-input-address"><i class="fa fa-server"></i> Address</label>
+    <input type="text" id="node-input-address" placeholder="local bind address (blank = all interfaces)" />
+  </div>
+  <div class="form-row">
+    <label for="node-input-multicastGroup"><i class="fa fa-sitemap"></i> Multicast</label>
+    <input type="text" id="node-input-multicastGroup" placeholder="multicast group to join e.g. 239.1.1.1 (optional)" />
+  </div>
+  <div class="form-row">
+    <label for="node-input-mode"><i class="fa fa-exchange"></i> Output</label>
+    <select id="node-input-mode">
+      <option value="binary">Buffer</option>
+      <option value="utf8">String (utf8)</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label for="node-input-reuseAddr" style="width:auto"><i class="fa fa-clone"></i> Reuse address (SO_REUSEADDR)</label>
+    <input type="checkbox" id="node-input-reuseAddr" style="display:inline-block; width:auto; vertical-align:top;" />
+  </div>
+</script>
+
+<script type="text/html" data-help-name="udp-in">
+  <p>Binds a <b>UDP/IPv4</b> socket and emits received datagrams. Supports joining a
+  multicast group and shared binding via <code>SO_REUSEADDR</code>. Broadcast
+  datagrams are received by binding to the relevant port.</p>
+
+  <h3>Outputs</h3>
+  <ol class="node-ports">
+    <li>Events — <code>listening</code> and <code>error</code> envelopes.</li>
+    <li>Data — one message per datagram. <code>payload</code> is a Buffer or String
+      depending on the Output setting; <code>rinfo</code> describes the sender
+      (<code>address</code>, <code>port</code>, <code>size</code>).</li>
+  </ol>
+
+  <h3>Details</h3>
+  <p>A <code>sessionId</code> is allocated for the listening socket and included on
+  every output message.</p>
+</script>

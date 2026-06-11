@@ -1,0 +1,58 @@
+<script type="text/javascript">
+  RED.nodes.registerType("tcp-send", {
+    category: "tcpip",
+    color: "#4A90D9",
+    defaults: {
+      name: { value: "" },
+      waitFor: { value: "" }
+    },
+    inputs: 1,
+    outputs: 2,
+    outputLabels: ["events", "data"],
+    icon: "font-awesome/fa-paper-plane",
+    label: function () {
+      return this.name || "tcp send";
+    },
+    paletteLabel: "tcp send"
+  });
+</script>
+
+<script type="text/html" data-template-name="tcp-send">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name" />
+  </div>
+  <div class="form-row">
+    <label for="node-input-waitFor"><i class="fa fa-filter"></i> Wait For</label>
+    <input type="text" id="node-input-waitFor" placeholder="optional RegExp (line mode) e.g. ^OK$" />
+  </div>
+</script>
+
+<script type="text/html" data-help-name="tcp-send">
+  <p>Sends data on an existing TCP session and claims that session's data output,
+  so the response is routed back to this node.</p>
+
+  <h3>Inputs</h3>
+  <dl class="message-properties">
+    <dt>sessionId <span class="property-type">string</span></dt>
+    <dd>The session to send on (from a <b>tcp connect</b> node).</dd>
+    <dt>payload <span class="property-type">string | Buffer | array</span></dt>
+    <dd>Data to send. An array sends each item as a separate write. Items must be
+      String or Buffer (no automatic encoding is applied).</dd>
+  </dl>
+
+  <h3>Outputs</h3>
+  <ol class="node-ports">
+    <li>Events — a <code>sent</code> acknowledgement (with <code>messageId</code> and
+      <code>chunkCount</code>) or an error envelope.</li>
+    <li>Data — the server's response for this session.</li>
+  </ol>
+
+  <h3>Error codes</h3>
+  <ul>
+    <li><code>SESSION_NOT_FOUND</code> — unknown sessionId.</li>
+    <li><code>SESSION_NOT_CONNECTED</code> — session exists but is not connected.</li>
+    <li><code>PAYLOAD_INVALID</code> — a payload item is not a string or Buffer.</li>
+    <li><code>SOCKET_NOT_CONNECTED</code> — the underlying socket is gone.</li>
+  </ul>
+</script>

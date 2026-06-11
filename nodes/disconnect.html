@@ -1,0 +1,42 @@
+<script type="text/javascript">
+  RED.nodes.registerType("tcp-disconnect", {
+    category: "tcpip",
+    color: "#4A90D9",
+    defaults: {
+      name: { value: "" }
+    },
+    inputs: 1,
+    outputs: 1,
+    outputLabels: ["events"],
+    icon: "font-awesome/fa-chain-broken",
+    label: function () {
+      return this.name || "tcp disconnect";
+    },
+    paletteLabel: "tcp disconnect"
+  });
+</script>
+
+<script type="text/html" data-template-name="tcp-disconnect">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name" />
+  </div>
+</script>
+
+<script type="text/html" data-help-name="tcp-disconnect">
+  <p>Closes a TCP session identified by <code>msg.sessionId</code>.</p>
+
+  <h3>Inputs</h3>
+  <dl class="message-properties">
+    <dt>sessionId <span class="property-type">string</span></dt>
+    <dd>The session to close.</dd>
+  </dl>
+
+  <h3>Outputs</h3>
+  <ol class="node-ports">
+    <li>Events — a <code>disconnecting</code> acknowledgement, or a
+      <code>SESSION_NOT_FOUND</code> error. The final <code>disconnected</code>
+      event is emitted by the originating <b>tcp connect</b> node when the socket
+      close completes.</li>
+  </ol>
+</script>

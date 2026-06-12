@@ -336,6 +336,107 @@ describe("tcp-send node", () => {
     });
   });
 
+  // ---- inactivity timeout ----
+
+  describe("inactivity timeout", () => {
+    it("emits conn-timeout-set with config.timeout after a successful send", () => {
+      const emitted = [];
+      store.globalBus.on("conn-timeout-set", (e) => emitted.push(e));
+
+      const sessionId = seedSession();
+      store.indexSession(sessionId, { write: () => {} });
+
+      const node = makeNode({ timeout: 2000 });
+      input(node, { sessionId, payload: "hi" });
+
+      assert.strictEqual(emitted.length, 1);
+      assert.strictEqual(emitted[0].sessionId, sessionId);
+      assert.strictEqual(emitted[0].timeoutMs, 2000);
+
+      store.globalBus.removeAllListeners("conn-timeout-set");
+      closeNode(node);
+    });
+
+    it("prefers msg.timeout over config.timeout", () => {
+      const emitted = [];
+      store.globalBus.on("conn-timeout-set", (e) => emitted.push(e));
+
+      const sessionId = seedSession();
+      store.indexSession(sessionId, { write: () => {} });
+
+      const node = makeNode({ timeout: 2000 });
+      input(node, { sessionId, payload: "hi", timeout: 500 });
+
+      assert.strictEqual(emitted[0].timeoutMs, 500);
+
+      store.globalBus.removeAllListeners("conn-timeout-set");
+      closeNode(node);
+    });
+
+    it("emits conn-timeout-set with timeoutMs:0 when no timeout is configured", () => {
+      const emitted = [];
+      store.globalBus.on("conn-timeout-set", (e) => emitted.push(e));
+
+      const sessionId = seedSession();
+      store.indexSession(sessionId, { write: () => {} });
+
+      const node = makeNode();
+      input(node, { sessionId, payload: "hi" });
+
+      assert.strictEqual(emitted.length, 1);
+      assert.strictEqual(emitted[0].timeoutMs, 0);
+
+      store.globalBus.removeAllListeners("conn-timeout-set");
+      closeNode(node);
+    });
+
+    it("stores timeoutMs on the session record when a positive timeout is resolved", () => {
+      const sessionId = seedSession();
+      store.indexSession(sessionId, { write: () => {} });
+
+      const node = makeNode({ timeout: 3000 });
+      input(node, { sessionId, payload: "hi" });
+
+      const rec = store.registry.get(sessionId);
+      assert.strictEqual(rec.timeoutMs, 3000);
+      closeNode(node);
+    });
+
+    it("does not store timeoutMs when the resolved timeout is zero", () => {
+      const sessionId = seedSession();
+      store.indexSession(sessionId, { write: () => {} });
+
+      const node = makeNode();
+      input(node, { sessionId, payload: "hi" });
+
+      const rec = store.registry.get(sessionId);
+      assert.ok(!rec.timeoutMs, "timeoutMs should not be set");
+      closeNode(node);
+    });
+
+    it("does not emit conn-timeout-set when the write fails", () => {
+      const emitted = [];
+      store.globalBus.on("conn-timeout-set", (e) => emitted.push(e));
+
+      const sessionId = seedSession();
+      store.indexSession(sessionId, {
+        write() {
+          const err = new Error("gone");
+          err.code = "SOCKET_NOT_CONNECTED";
+          throw err;
+        },
+      });
+
+      const node = makeNode({ timeout: 1000 });
+      input(node, { sessionId, payload: "hi" });
+
+      assert.strictEqual(emitted.length, 0);
+
+      store.globalBus.removeAllListeners("conn-timeout-set");
+      closeNode(node);
+    });
+  });
+
   // ---- claim transfer ----
 
   describe("claim transfer", () => {

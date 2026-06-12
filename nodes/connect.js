@@ -42,6 +42,32 @@ module.exports = function (RED) {
     // Sessions created by THIS node (so close can tear them down).
     const ownSessions = new Set();
 
+    // Per-session inactivity timers: sessionId -> timerHandle.
+    const sessionTimers = new Map();
+
+    function startTimer(sessionId, timeoutMs) {
+      const existing = sessionTimers.get(sessionId);
+      if (existing) {
+        clearTimeout(existing);
+        sessionTimers.delete(sessionId);
+      }
+      if (!(timeoutMs > 0)) return;
+      const t = setTimeout(() => {
+        sessionTimers.delete(sessionId);
+        const claim = store.getClaim(sessionId);
+        if (claim && typeof claim.node.send === "function") {
+          claim.node.send([
+            errorEnvelope("TIMEOUT", "Inactivity timeout", {
+              event: "timeout",
+              sessionId,
+            }),
+            null,
+          ]);
+        }
+      }, timeoutMs);
+      sessionTimers.set(sessionId, t);
+    }
+
     /* ----------------------- bus subscriptions ----------------------- */
 
     const onLifecycle = (evt) => {
@@ -112,8 +138,26 @@ module.exports = function (RED) {
       );
     };
 
+    // Reset the inactivity timer on every inbound frame for sessions this
+    // node owns, regardless of which node currently holds the data claim.
+    const onDataForTimer = (evt) => {
+      if (!ownSessions.has(evt.sessionId)) return;
+      const rec = store.registry.get(evt.sessionId);
+      if (rec && rec.timeoutMs > 0) {
+        startTimer(evt.sessionId, rec.timeoutMs);
+      }
+    };
+
+    // A send node emits this after a successful write to arm/re-arm the timer.
+    const onTimeoutSet = (evt) => {
+      if (!ownSessions.has(evt.sessionId)) return;
+      startTimer(evt.sessionId, evt.timeoutMs);
+    };
+
     store.globalBus.on("conn-lifecycle", onLifecycle);
     store.globalBus.on("conn-data", onData);
+    store.globalBus.on("conn-data", onDataForTimer);
+    store.globalBus.on("conn-timeout-set", onTimeoutSet);
 
     /* --------------------------- connecting -------------------------- */
 
@@ -202,6 +246,11 @@ module.exports = function (RED) {
         });
       });
       client.on("close", () => {
+        const t = sessionTimers.get(sessionId);
+        if (t) {
+          clearTimeout(t);
+          sessionTimers.delete(sessionId);
+        }
         store.registry.update(sessionId, { state: "disconnected" });
         store.globalBus.emit("conn-lifecycle", { event: "disconnected", sessionId });
         ownSessions.delete(sessionId);
@@ -237,8 +286,15 @@ module.exports = function (RED) {
     node.on("close", (removed, done) => {
       store.globalBus.off("conn-lifecycle", onLifecycle);
       store.globalBus.off("conn-data", onData);
+      store.globalBus.off("conn-data", onDataForTimer);
+      store.globalBus.off("conn-timeout-set", onTimeoutSet);
       // Tear down sessions this node created.
       for (const sessionId of Array.from(ownSessions)) {
+        const t = sessionTimers.get(sessionId);
+        if (t) {
+          clearTimeout(t);
+          sessionTimers.delete(sessionId);
+        }
         const transport = store.transportForSession(sessionId);
         if (transport && typeof transport.destroy === "function") {
           transport.destroy();

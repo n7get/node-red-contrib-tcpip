@@ -33,6 +33,7 @@ module.exports = function (RED) {
     }
 
     const nodeTerminator = LINE_TERMINATORS[config.lineTerminator] || "";
+    const cfgTimeout = parseInt(config.timeout, 10) || 0;
 
     // Deliver responses for sessions this node currently claims.
     const onData = (evt) => {
@@ -152,6 +153,23 @@ module.exports = function (RED) {
       }
 
       store.registry.touch(sessionId);
+
+      // Resolve effective inactivity timeout: msg.timeout > config.timeout > null.
+      const msgTimeout = msg.timeout;
+      let resolvedTimeout = null;
+      if (typeof msgTimeout === "number" && msgTimeout > 0) {
+        resolvedTimeout = msgTimeout;
+      } else if (cfgTimeout > 0) {
+        resolvedTimeout = cfgTimeout;
+      }
+      if (resolvedTimeout !== null) {
+        store.registry.update(sessionId, { timeoutMs: resolvedTimeout });
+      }
+      store.globalBus.emit("conn-timeout-set", {
+        sessionId,
+        timeoutMs: resolvedTimeout || 0,
+      });
+
       localSend([
         okEnvelope({
           event: "sent",

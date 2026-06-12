@@ -5,7 +5,8 @@
     defaults: {
       name: { value: "" },
       waitFor: { value: "" },
-      lineTerminator: { value: "" }
+      lineTerminator: { value: "" },
+      timeout: { value: 0, validate: RED.validators.number() }
     },
     inputs: 1,
     outputs: 2,
@@ -36,6 +37,10 @@
       <option value="cr">CR (\r)</option>
     </select>
   </div>
+  <div class="form-row">
+    <label for="node-input-timeout"><i class="fa fa-clock-o"></i> Timeout (ms)</label>
+    <input type="text" id="node-input-timeout" placeholder="0 = disabled" />
+  </div>
 </script>
 
 <script type="text/html" data-help-name="tcp-send">
@@ -51,6 +56,11 @@
       String or Buffer (no automatic encoding is applied). In line mode, a
       configured <b>Line End</b> suffix is appended to each string item before
       writing.</dd>
+    <dt class="optional">timeout <span class="property-type">number</span></dt>
+    <dd>Per-message inactivity timeout in ms. Overrides the node's configured
+      <b>Timeout</b>. A positive value starts a timer after the send; if no
+      inbound data arrives within the window a <code>TIMEOUT</code> error is
+      emitted on output 1. Set to <code>0</code> to disable.</dd>
   </dl>
 
   <h3>Configuration</h3>
@@ -63,6 +73,11 @@
       session is in line mode: <code>None</code>, <code>LF&nbsp;(\n)</code>,
       <code>CR+LF&nbsp;(\r\n)</code>, or <code>CR&nbsp;(\r)</code>. Buffer
       items are never modified.</dd>
+    <dt>Timeout (ms) <span class="property-type">number</span></dt>
+    <dd>Inactivity timeout applied after every send. <code>0</code> disables it.
+      Overridable per-message via <code>msg.timeout</code>. When the timer
+      fires a <code>TIMEOUT</code> error envelope is emitted on output 1 of
+      whichever send node currently holds the data-output claim.</dd>
   </dl>
 
   <h3>Outputs</h3>
@@ -78,5 +93,6 @@
     <li><code>SESSION_NOT_CONNECTED</code> — session exists but is not connected.</li>
     <li><code>PAYLOAD_INVALID</code> — a payload item is not a string or Buffer.</li>
     <li><code>SOCKET_NOT_CONNECTED</code> — the underlying socket is gone.</li>
+    <li><code>TIMEOUT</code> — no inbound data arrived within the configured window.</li>
   </ul>
 </script>

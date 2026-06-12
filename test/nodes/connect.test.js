@@ -302,4 +302,132 @@ describe("tcp-connect node", () => {
       assert.strictEqual(node._sent.length, countAfterClose);
     });
   });
+
+  // ---- inactivity timer ----
+
+  describe("inactivity timer", () => {
+    it("fires a TIMEOUT error on the data-claim holder when the timer expires", function (done) {
+      const node = makeNode({ host: "1.2.3.4", port: 9000 });
+      input(node, { host: "1.2.3.4", port: 9000 });
+      lastClient().simulateConnect();
+
+      const sessionId = store.registry.list()[0].sessionId;
+
+      // A send node claims the data output.
+      const fakeClaimHolder = { send: (m) => { received = m; } };
+      let received = null;
+      store.setClaim(sessionId, fakeClaimHolder, null);
+
+      // Arm the timer for 20 ms.
+      store.globalBus.emit("conn-timeout-set", { sessionId, timeoutMs: 20 });
+
+      setTimeout(() => {
+        assert.ok(received, "expected a timeout message to be delivered");
+        assert.strictEqual(received[0].errorCode, "TIMEOUT");
+        assert.strictEqual(received[0].event, "timeout");
+        assert.strictEqual(received[0].sessionId, sessionId);
+        assert.strictEqual(received[1], null);
+        closeNode(node);
+        done();
+      }, 50);
+    });
+
+    it("ignores conn-timeout-set for sessions not owned by this node", function (done) {
+      const node = makeNode({ host: "1.2.3.4", port: 9000 });
+      // Do not connect — ownSessions remains empty.
+
+      let received = null;
+      const fakeHolder = { send: (m) => { received = m; } };
+      const foreignId = "not-mine";
+      store.registry.create({ sessionId: foreignId, state: "connected" });
+      store.setClaim(foreignId, fakeHolder, null);
+
+      store.globalBus.emit("conn-timeout-set", { sessionId: foreignId, timeoutMs: 20 });
+
+      setTimeout(() => {
+        assert.strictEqual(received, null, "should not fire for a foreign session");
+        store.purgeSession(foreignId);
+        closeNode(node);
+        done();
+      }, 50);
+    });
+
+    it("resets the timer when inbound data arrives", function (done) {
+      const node = makeNode({ host: "1.2.3.4", port: 9000 });
+      input(node, { host: "1.2.3.4", port: 9000 });
+      const client = lastClient();
+      client.simulateConnect();
+
+      const sessionId = store.registry.list()[0].sessionId;
+      store.registry.update(sessionId, { timeoutMs: 40 });
+
+      let received = null;
+      const fakeHolder = { send: (m) => { received = m; } };
+      store.setClaim(sessionId, fakeHolder, null);
+
+      // Arm timer for 40 ms, then reset it with data at 20 ms.
+      store.globalBus.emit("conn-timeout-set", { sessionId, timeoutMs: 40 });
+      setTimeout(() => {
+        client.simulateData("ping"); // should reset the 40 ms timer
+      }, 20);
+
+      // After the original 40 ms window the timer should NOT have fired yet
+      // (it was reset). After 70 ms the reset timer (40 ms from t=20) fires.
+      setTimeout(() => {
+        assert.strictEqual(received, null, "timer should not have fired at 30 ms");
+      }, 30);
+
+      setTimeout(() => {
+        assert.ok(received, "timer should have fired after the reset window");
+        assert.strictEqual(received[0].errorCode, "TIMEOUT");
+        closeNode(node);
+        done();
+      }, 80);
+    });
+
+    it("cancels the timer when the session closes", function (done) {
+      const node = makeNode({ host: "1.2.3.4", port: 9000 });
+      input(node, { host: "1.2.3.4", port: 9000 });
+      const client = lastClient();
+      client.simulateConnect();
+
+      const sessionId = store.registry.list()[0].sessionId;
+
+      let received = null;
+      const fakeHolder = { send: (m) => { received = m; } };
+      store.setClaim(sessionId, fakeHolder, null);
+
+      store.globalBus.emit("conn-timeout-set", { sessionId, timeoutMs: 30 });
+
+      // Close the session before the timer fires.
+      client.simulateClose();
+
+      setTimeout(() => {
+        assert.strictEqual(received, null, "timer should have been cancelled on close");
+        closeNode(node);
+        done();
+      }, 60);
+    });
+
+    it("cancels timers for all owned sessions when the node closes", function (done) {
+      const node = makeNode({ host: "1.2.3.4", port: 9000 });
+      input(node, { host: "1.2.3.4", port: 9000 });
+      lastClient().simulateConnect();
+
+      const sessionId = store.registry.list()[0].sessionId;
+
+      let received = null;
+      const fakeHolder = { send: (m) => { received = m; } };
+      store.setClaim(sessionId, fakeHolder, null);
+
+      store.globalBus.emit("conn-timeout-set", { sessionId, timeoutMs: 30 });
+
+      closeNode(node); // should cancel the timer
+
+      setTimeout(() => {
+        assert.strictEqual(received, null, "timer should have been cancelled on node close");
+        done();
+      }, 60);
+    });
+  });
 });

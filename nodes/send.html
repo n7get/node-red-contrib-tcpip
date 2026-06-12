@@ -4,7 +4,8 @@
     color: "#4A90D9",
     defaults: {
       name: { value: "" },
-      waitFor: { value: "" }
+      waitFor: { value: "" },
+      lineTerminator: { value: "" }
     },
     inputs: 1,
     outputs: 2,
@@ -26,6 +27,15 @@
     <label for="node-input-waitFor"><i class="fa fa-filter"></i> Wait For</label>
     <input type="text" id="node-input-waitFor" placeholder="optional RegExp (line mode) e.g. ^OK$" />
   </div>
+  <div class="form-row">
+    <label for="node-input-lineTerminator"><i class="fa fa-level-down"></i> Line End</label>
+    <select id="node-input-lineTerminator">
+      <option value="">None</option>
+      <option value="lf">LF (\n)</option>
+      <option value="crlf">CR+LF (\r\n)</option>
+      <option value="cr">CR (\r)</option>
+    </select>
+  </div>
 </script>
 
 <script type="text/html" data-help-name="tcp-send">
@@ -38,7 +48,21 @@
     <dd>The session to send on (from a <b>tcp connect</b> node).</dd>
     <dt>payload <span class="property-type">string | Buffer | array</span></dt>
     <dd>Data to send. An array sends each item as a separate write. Items must be
-      String or Buffer (no automatic encoding is applied).</dd>
+      String or Buffer (no automatic encoding is applied). In line mode, a
+      configured <b>Line End</b> suffix is appended to each string item before
+      writing.</dd>
+  </dl>
+
+  <h3>Configuration</h3>
+  <dl class="message-properties">
+    <dt>Wait For <span class="property-type">RegExp string</span></dt>
+    <dd>Optional regular expression (line mode only). Response lines are buffered
+      until one matches, then all buffered lines are emitted together.</dd>
+    <dt>Line End <span class="property-type">select</span></dt>
+    <dd>Terminator appended to each outgoing <em>string</em> item when the
+      session is in line mode: <code>None</code>, <code>LF&nbsp;(\n)</code>,
+      <code>CR+LF&nbsp;(\r\n)</code>, or <code>CR&nbsp;(\r)</code>. Buffer
+      items are never modified.</dd>
   </dl>
 
   <h3>Outputs</h3>

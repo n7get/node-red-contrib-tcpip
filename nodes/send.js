@@ -15,6 +15,8 @@
 const store = require("../lib/runtime-store");
 const { okEnvelope, errorEnvelope, makeMessageId } = require("../lib/message-utils");
 
+const LINE_TERMINATORS = { lf: "\n", crlf: "\r\n", cr: "\r" };
+
 module.exports = function (RED) {
   function TcpSendNode(config) {
     RED.nodes.createNode(this, config);
@@ -29,6 +31,8 @@ module.exports = function (RED) {
         node.status({ fill: "red", shape: "ring", text: "bad waitFor regex" });
       }
     }
+
+    const nodeTerminator = LINE_TERMINATORS[config.lineTerminator] || "";
 
     // Deliver responses for sessions this node currently claims.
     const onData = (evt) => {
@@ -126,9 +130,14 @@ module.exports = function (RED) {
       store.setClaim(sessionId, node, effectiveWaitFor);
 
       const messageId = makeMessageId("msg");
+      const isLineMode = record.mode === "line";
       try {
         for (const item of items) {
-          transport.write(item);
+          const toWrite =
+            isLineMode && nodeTerminator && typeof item === "string"
+              ? item + nodeTerminator
+              : item;
+          transport.write(toWrite);
         }
       } catch (err) {
         localSend([

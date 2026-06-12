@@ -238,6 +238,104 @@ describe("tcp-send node", () => {
     });
   });
 
+  // ---- line terminator ----
+
+  describe("line terminator", () => {
+    it("appends LF to string items when session is in line mode", () => {
+      const written = [];
+      const sessionId = seedSession({ mode: "line" });
+      store.indexSession(sessionId, { write: (d) => written.push(d) });
+
+      const node = makeNode({ lineTerminator: "lf" });
+      input(node, { sessionId, payload: "hello" });
+
+      assert.strictEqual(written.length, 1);
+      assert.strictEqual(written[0], "hello\n");
+      closeNode(node);
+    });
+
+    it("appends CR+LF to string items when session is in line mode", () => {
+      const written = [];
+      const sessionId = seedSession({ mode: "line" });
+      store.indexSession(sessionId, { write: (d) => written.push(d) });
+
+      const node = makeNode({ lineTerminator: "crlf" });
+      input(node, { sessionId, payload: "hello" });
+
+      assert.strictEqual(written.length, 1);
+      assert.strictEqual(written[0], "hello\r\n");
+      closeNode(node);
+    });
+
+    it("appends CR to string items when session is in line mode", () => {
+      const written = [];
+      const sessionId = seedSession({ mode: "line" });
+      store.indexSession(sessionId, { write: (d) => written.push(d) });
+
+      const node = makeNode({ lineTerminator: "cr" });
+      input(node, { sessionId, payload: "hello" });
+
+      assert.strictEqual(written.length, 1);
+      assert.strictEqual(written[0], "hello\r");
+      closeNode(node);
+    });
+
+    it("appends the terminator to each item in an array payload", () => {
+      const written = [];
+      const sessionId = seedSession({ mode: "line" });
+      store.indexSession(sessionId, { write: (d) => written.push(d) });
+
+      const node = makeNode({ lineTerminator: "lf" });
+      input(node, { sessionId, payload: ["line1", "line2"] });
+
+      assert.strictEqual(written.length, 2);
+      assert.strictEqual(written[0], "line1\n");
+      assert.strictEqual(written[1], "line2\n");
+      closeNode(node);
+    });
+
+    it("does not append a terminator in binary mode", () => {
+      const written = [];
+      const sessionId = seedSession({ mode: "binary" });
+      store.indexSession(sessionId, { write: (d) => written.push(d) });
+
+      const node = makeNode({ lineTerminator: "crlf" });
+      input(node, { sessionId, payload: "hello" });
+
+      assert.strictEqual(written.length, 1);
+      assert.strictEqual(written[0], "hello");
+      closeNode(node);
+    });
+
+    it("does not append a terminator to Buffer items", () => {
+      const written = [];
+      const sessionId = seedSession({ mode: "line" });
+      store.indexSession(sessionId, { write: (d) => written.push(d) });
+
+      const node = makeNode({ lineTerminator: "lf" });
+      const buf = Buffer.from("hello");
+      input(node, { sessionId, payload: buf });
+
+      assert.strictEqual(written.length, 1);
+      assert.ok(Buffer.isBuffer(written[0]));
+      assert.strictEqual(written[0].toString(), "hello");
+      closeNode(node);
+    });
+
+    it("does not modify payload when lineTerminator is not set", () => {
+      const written = [];
+      const sessionId = seedSession({ mode: "line" });
+      store.indexSession(sessionId, { write: (d) => written.push(d) });
+
+      const node = makeNode();
+      input(node, { sessionId, payload: "hello" });
+
+      assert.strictEqual(written.length, 1);
+      assert.strictEqual(written[0], "hello");
+      closeNode(node);
+    });
+  });
+
   // ---- claim transfer ----
 
   describe("claim transfer", () => {

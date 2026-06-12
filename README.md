@@ -193,6 +193,30 @@ Sends UDP/IPv4 datagrams (unicast, multicast or broadcast). **Output:** `[events
 
 ---
 
+## Example flows
+
+The `examples/` folder contains `flows-tcp.json` — a ready-to-import pair of
+flows demonstrating a TCP echo server and a matching client. Import it via the
+Node-RED menu: **Import → select file**.
+
+### TCP server flow
+
+The server flow uses `tcp listen` on port 2323. When a client connects it sends
+a greeting, echoes back any incoming data in upper-case, and disconnects cleanly
+when the client sends `bye`.
+
+![TCP server flow](examples/tcp-server.png)
+
+### TCP client flow
+
+The client flow connects to `127.0.0.1:2323` with `tcp connect`, sends a test
+message and then a `bye` to trigger the server's disconnect logic. The events
+output of each `tcp send` is checked for errors before proceeding.
+
+![TCP client flow](examples/tcp-client.png)
+
+---
+
 ## Usage examples
 
 ### TCP outbound request / response

@@ -1,0 +1,952 @@
+[
+    {
+        "id": "196f939f373c1d53",
+        "type": "tab",
+        "label": "Flow 2",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "3c693657989a4c37",
+        "type": "subflow",
+        "name": "Get message list",
+        "info": "",
+        "category": "",
+        "in": [
+            {
+                "x": 91,
+                "y": 96,
+                "wires": [
+                    {
+                        "id": "9cf1412f3b5cb133"
+                    }
+                ]
+            }
+        ],
+        "out": [
+            {
+                "x": 660,
+                "y": 140,
+                "wires": [
+                    {
+                        "id": "9cf1412f3b5cb133",
+                        "port": 0
+                    },
+                    {
+                        "id": "7a0bf977aceb9b9d",
+                        "port": 0
+                    },
+                    {
+                        "id": "9bc838d18c1486f0",
+                        "port": 0
+                    }
+                ]
+            },
+            {
+                "x": 660,
+                "y": 260,
+                "wires": [
+                    {
+                        "id": "7a0bf977aceb9b9d",
+                        "port": 1
+                    }
+                ]
+            }
+        ],
+        "env": [],
+        "meta": {},
+        "color": "#DDAA99"
+    },
+    {
+        "id": "f7f34a0fbba6409d",
+        "type": "subflow",
+        "name": "Send message",
+        "info": "",
+        "category": "",
+        "in": [
+            {
+                "x": 100,
+                "y": 120,
+                "wires": [
+                    {
+                        "id": "090399aff5479949"
+                    }
+                ]
+            }
+        ],
+        "out": [
+            {
+                "x": 410,
+                "y": 540,
+                "wires": [
+                    {
+                        "id": "1afee35f8b39aeae",
+                        "port": 0
+                    }
+                ]
+            },
+            {
+                "x": 400,
+                "y": 440,
+                "wires": [
+                    {
+                        "id": "b03019b9ac2774bd",
+                        "port": 1
+                    }
+                ]
+            }
+        ],
+        "env": [],
+        "meta": {},
+        "color": "#DDAA99",
+        "inputLabels": [
+            "Input"
+        ],
+        "outputLabels": [
+            "Error",
+            "Ok"
+        ]
+    },
+    {
+        "id": "f1e3c30bea1bbe94",
+        "type": "subflow",
+        "name": "Bye",
+        "info": "",
+        "category": "",
+        "in": [
+            {
+                "x": 80,
+                "y": 120,
+                "wires": [
+                    {
+                        "id": "0813fedcec47e075"
+                    }
+                ]
+            }
+        ],
+        "out": [
+            {
+                "x": 720,
+                "y": 60,
+                "wires": [
+                    {
+                        "id": "fed58202ceb48e13",
+                        "port": 0
+                    },
+                    {
+                        "id": "1e49e3218b1dd308",
+                        "port": 0
+                    }
+                ]
+            }
+        ],
+        "env": [],
+        "meta": {},
+        "color": "#DDAA99"
+    },
+    {
+        "id": "43f63a776d0f7144",
+        "type": "send",
+        "z": "3c693657989a4c37",
+        "name": "",
+        "timeout": "30000",
+        "waitFor": "^ENTER COMMAND",
+        "x": 221,
+        "y": 176,
+        "wires": [
+            [
+                "9bc838d18c1486f0"
+            ],
+            [
+                "7a0bf977aceb9b9d"
+            ]
+        ]
+    },
+    {
+        "id": "9cf1412f3b5cb133",
+        "type": "function",
+        "z": "3c693657989a4c37",
+        "name": "L",
+        "func": "\"use strict\";\n\nif (!msg.sessionId) {\n  const errorCode = 'NO_SESSION_ID';\n  const errorText = \"sessionID not found\";\n\n  node.error(`[${errorCode}] ${errorText}`);\n\n  return [{\n    status: 'error',\n    errorCode,\n    errorText,\n    msg,\n  }, null];\n}\n\nreturn [{\n  sessionId: msg.sessionId,\n  status: 'ok',\n  event: 'Get message list',\n}, {\n  sessionId: msg.sessionId,\n  command: 'send',\n  payload: 'L',\n  timeout: 30000,\n}];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 221,
+        "y": 96,
+        "wires": [
+            [],
+            [
+                "43f63a776d0f7144"
+            ]
+        ]
+    },
+    {
+        "id": "7a0bf977aceb9b9d",
+        "type": "function",
+        "z": "3c693657989a4c37",
+        "name": "Create delete list",
+        "func": "\"use strict\";\n\nfunction kamParse(input) {\n  const regex = /^(\\d+)\\s+(\\S+)\\s+(\\d+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(.+)$/;\n\n  const output = input.map( l => {\n    const m = l.match(regex);\n\n    if (m) {\n        return {\n          line: m[0],\n          no: m[1],\n          type: m[2],\n          size: m[3],\n          dest: m[4],\n          src: m[5],\n          date: m[6],\n          time: m[7],\n          subject: m[8],\n        };\n      }\n  }).filter(Boolean);\n\n  return output;\n}\n\nif (!msg.match || !msg.match.startsWith('ENTER COMMAND')) {\n  const errorCode = 'MATCH_NOT_FOUND';\n  const errorText = \"Expected ENTER COMMAND\";\n  \n  node.error(`[${errorCode}] ${errorText}`, msg);\n\n  return [{\n    sessionId: msg.sessionId,\n    status: 'error',\n    errorCode,\n    errorText,\n  }, null];\n}\n\nconst payload = kamParse(msg.payload);\n\nreturn [{\n  sessionId: msg.sessionId,\n  status: 'ok',\n  event: 'Received message list',\n}, {\n  sessionId: msg.sessionId,\n  status: 'ok',\n  payload,\n}];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 250,
+        "y": 260,
+        "wires": [
+            [],
+            []
+        ]
+    },
+    {
+        "id": "9bc838d18c1486f0",
+        "type": "function",
+        "z": "3c693657989a4c37",
+        "name": "check error",
+        "func": "\"use strict\";\n\nif (msg.status === 'error') {\n    node.error(`[${msg.errorCode}] ${msg.errorText}`, msg);\n    return msg;\n}\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 430,
+        "y": 160,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "b03019b9ac2774bd",
+        "type": "function",
+        "z": "f7f34a0fbba6409d",
+        "name": "done",
+        "func": "\"use strict\";\n\nif (!msg.match || !msg.match.startsWith('ENTER COMMAND')) {\n  node.error(\"Expected ENTER COMMAND\", msg);\n  return [{ sessionId: msg.sessionId }, null];\n}\n\nflow.set(msg.sessionId, undefined);\n\nreturn [null, { sessionId: msg.sessionId }];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 230,
+        "y": 420,
+        "wires": [
+            [
+                "4b0c0af1ad7ff1f2"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "1f73bfe9965d5eba",
+        "type": "send",
+        "z": "f7f34a0fbba6409d",
+        "name": "",
+        "timeout": "",
+        "waitFor": "",
+        "x": 510,
+        "y": 320,
+        "wires": [
+            [
+                "f297ea382d23401a"
+            ],
+            [
+                "b03019b9ac2774bd"
+            ]
+        ]
+    },
+    {
+        "id": "55133ce425ecb905",
+        "type": "function",
+        "z": "f7f34a0fbba6409d",
+        "name": "message",
+        "func": "\"use strict\";\n\nif (!msg.match || !msg.match.startsWith('ENTER MESSAGE')) {\n  node.error(\"Expected ENTER MESSAGE\", msg);\n  return [{ sessionId: msg.sessionId }, null];\n}\n\nconst p = flow.get(msg.sessionId);\n\nconst payload = p.message.split(/\\r\\n|\\r|\\n/);\npayload.push('/ex');\n\nreturn [null, {\n  sessionId: msg.sessionId,\n  payload,\n  waitFor: \"^ENTER COMMAND\",\n  timeout: 30000,\n}];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 240,
+        "y": 320,
+        "wires": [
+            [
+                "5535e8c84873b0cf"
+            ],
+            [
+                "1f73bfe9965d5eba"
+            ]
+        ]
+    },
+    {
+        "id": "3b57302d2e4b02e0",
+        "type": "send",
+        "z": "f7f34a0fbba6409d",
+        "name": "",
+        "timeout": "",
+        "waitFor": "",
+        "x": 510,
+        "y": 220,
+        "wires": [
+            [
+                "5f4f636755d763be"
+            ],
+            [
+                "55133ce425ecb905"
+            ]
+        ]
+    },
+    {
+        "id": "373827068969f974",
+        "type": "function",
+        "z": "f7f34a0fbba6409d",
+        "name": "subject",
+        "func": "\"use strict\";\n\nif (!msg.match || !msg.match.startsWith('SUBJECT')) {\n  node.error(\"Expected SUBJECT\", msg);\n  return [{ sessionId: msg.sessionId }, null];\n}\n\nconst p = flow.get(msg.sessionId);\n\nreturn [null, {\n  sessionId: msg.sessionId,\n  payload: p.subject,\n  waitFor: \"^ENTER MESSAGE\",\n  timeout: 30000,\n}];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 240,
+        "y": 220,
+        "wires": [
+            [
+                "c64ee163811b7b1c"
+            ],
+            [
+                "3b57302d2e4b02e0"
+            ]
+        ]
+    },
+    {
+        "id": "5cf73512bec967fe",
+        "type": "send",
+        "z": "f7f34a0fbba6409d",
+        "name": "",
+        "timeout": "",
+        "waitFor": "",
+        "x": 510,
+        "y": 120,
+        "wires": [
+            [
+                "1821e4baa068a563"
+            ],
+            [
+                "373827068969f974"
+            ]
+        ]
+    },
+    {
+        "id": "090399aff5479949",
+        "type": "function",
+        "z": "f7f34a0fbba6409d",
+        "name": "ST",
+        "func": "\"use strict\";\n\nconst required = [\"sessionId\", \"to\", \"subject\", \"message\"];\n\nfor (let i = 0; i < required.length; i++) {\n  const p = required[i];\n  \n  if (!msg.hasOwnProperty(p) || msg[p].length === 0) {\n    const errorCode = 'PAYLOAD_INVALID';\n    const errorText = p + \" not found\";\n\n    node.error(`[${errorCode}] ${errorText}`);\n\n    return [{\n      sessionId: msg.sessionId,\n      status: 'error',\n      errorCode,\n      errorText,\n      msg,\n    }, null];\n  }\n}\n\nflow.set(msg.sessionId, {\n    to:      msg.to,\n    subject: msg.subject,\n    message: msg.message\n});\n\nreturn [null, {\n  sessionId: msg.sessionId,\n  payload: \"ST \" + msg.to,\n  waitFor: \"^SUBJECT\",\n  timeout: 30000,\n}];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 230,
+        "y": 120,
+        "wires": [
+            [
+                "f711de2a83d0482b"
+            ],
+            [
+                "5cf73512bec967fe"
+            ]
+        ]
+    },
+    {
+        "id": "1afee35f8b39aeae",
+        "type": "link in",
+        "z": "f7f34a0fbba6409d",
+        "name": "error",
+        "links": [
+            "f711de2a83d0482b",
+            "c64ee163811b7b1c",
+            "5535e8c84873b0cf",
+            "4b0c0af1ad7ff1f2",
+            "81e3e712c3900aa4",
+            "1292b88c4fa4bb3b",
+            "87ab14e10118b86d"
+        ],
+        "x": 255,
+        "y": 540,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "4b0c0af1ad7ff1f2",
+        "type": "link out",
+        "z": "f7f34a0fbba6409d",
+        "name": "link out 38",
+        "mode": "link",
+        "links": [
+            "1afee35f8b39aeae"
+        ],
+        "x": 375,
+        "y": 400,
+        "wires": []
+    },
+    {
+        "id": "f711de2a83d0482b",
+        "type": "link out",
+        "z": "f7f34a0fbba6409d",
+        "name": "link out 35",
+        "mode": "link",
+        "links": [
+            "1afee35f8b39aeae"
+        ],
+        "x": 375,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "c64ee163811b7b1c",
+        "type": "link out",
+        "z": "f7f34a0fbba6409d",
+        "name": "link out 36",
+        "mode": "link",
+        "links": [
+            "1afee35f8b39aeae"
+        ],
+        "x": 375,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "5535e8c84873b0cf",
+        "type": "link out",
+        "z": "f7f34a0fbba6409d",
+        "name": "link out 37",
+        "mode": "link",
+        "links": [
+            "1afee35f8b39aeae"
+        ],
+        "x": 375,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "87ab14e10118b86d",
+        "type": "link out",
+        "z": "f7f34a0fbba6409d",
+        "name": "link out 41",
+        "mode": "link",
+        "links": [
+            "1afee35f8b39aeae"
+        ],
+        "x": 885,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "1292b88c4fa4bb3b",
+        "type": "link out",
+        "z": "f7f34a0fbba6409d",
+        "name": "link out 40",
+        "mode": "link",
+        "links": [
+            "1afee35f8b39aeae"
+        ],
+        "x": 895,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "81e3e712c3900aa4",
+        "type": "link out",
+        "z": "f7f34a0fbba6409d",
+        "name": "link out 39",
+        "mode": "link",
+        "links": [
+            "1afee35f8b39aeae"
+        ],
+        "x": 895,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "1821e4baa068a563",
+        "type": "function",
+        "z": "f7f34a0fbba6409d",
+        "name": "check error",
+        "func": "\"use strict\";\n\nif (msg.status === 'error') {\n    node.error(`[${msg.errorCode}] ${msg.errorText}`, msg);\n    return msg;\n}\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 750,
+        "y": 100,
+        "wires": [
+            [
+                "81e3e712c3900aa4"
+            ]
+        ]
+    },
+    {
+        "id": "5f4f636755d763be",
+        "type": "function",
+        "z": "f7f34a0fbba6409d",
+        "name": "check error",
+        "func": "\"use strict\";\n\nif (msg.status === 'error') {\n    node.error(`[${msg.errorCode}] ${msg.errorText}`, msg);\n    return msg;\n}\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 750,
+        "y": 200,
+        "wires": [
+            [
+                "1292b88c4fa4bb3b"
+            ]
+        ]
+    },
+    {
+        "id": "f297ea382d23401a",
+        "type": "function",
+        "z": "f7f34a0fbba6409d",
+        "name": "check error",
+        "func": "\"use strict\";\n\nif (msg.status === 'error') {\n    node.error(`[${msg.errorCode}] ${msg.errorText}`, msg);\n    return msg;\n}\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 750,
+        "y": 300,
+        "wires": [
+            [
+                "87ab14e10118b86d"
+            ]
+        ]
+    },
+    {
+        "id": "0813fedcec47e075",
+        "type": "function",
+        "z": "f1e3c30bea1bbe94",
+        "name": "B",
+        "func": "\"use strict\";\n\nif (!msg.sessionId) {\n  const errorCode = 'NO_SESSION_ID';\n  const errorText = \"sessionID not found\";\n\n  node.error(`[${errorCode}] ${errorText}`);\n\n  return [{\n    status: 'error',\n    errorCode,\n    errorText,\n    msg,\n  }, null];\n}\n\nreturn [null, {\n    sessionId: msg.sessionId,\n    command: 'send',\n    payload: 'B',\n  timeout: 30000,\n}];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 210,
+        "y": 120,
+        "wires": [
+            [
+                "637170b1c7227488"
+            ],
+            [
+                "1e49e3218b1dd308"
+            ]
+        ]
+    },
+    {
+        "id": "1e49e3218b1dd308",
+        "type": "send",
+        "z": "f1e3c30bea1bbe94",
+        "name": "",
+        "timeout": "",
+        "waitFor": "",
+        "x": 390,
+        "y": 160,
+        "wires": [
+            [
+                "e3ab85e4461b92a5"
+            ],
+            [
+                "fed58202ceb48e13"
+            ]
+        ]
+    },
+    {
+        "id": "e3ab85e4461b92a5",
+        "type": "function",
+        "z": "f1e3c30bea1bbe94",
+        "name": "check error",
+        "func": "\"use strict\";\n\nif (msg.status === 'error') {\n    node.error(`[${msg.errorCode}] ${msg.errorText}`, msg);\n    return msg;\n}\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 630,
+        "y": 140,
+        "wires": [
+            [
+                "fed58202ceb48e13"
+            ]
+        ]
+    },
+    {
+        "id": "fed58202ceb48e13",
+        "type": "disconnect",
+        "z": "f1e3c30bea1bbe94",
+        "name": "",
+        "x": 810,
+        "y": 200,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "637170b1c7227488",
+        "type": "disconnect",
+        "z": "f1e3c30bea1bbe94",
+        "name": "",
+        "x": 410,
+        "y": 80,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "b501ca109a5d6f08",
+        "type": "function",
+        "z": "196f939f373c1d53",
+        "name": "connected -> greeting",
+        "func": "\"use strict\";\n\nif (msg.status === 'error') {\n    node.error(`[${msg.errorCode}] ${msg.errorText}`, msg);\n    return msg;\n}\n\nif (msg.event === 'connected') {\n    return {\n        sessionId: msg.sessionId,\n        command: 'send',\n        payload: 'greeting',\n    }\n}\n\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 100,
+        "wires": [
+            [
+                "016a279254b7e93f"
+            ]
+        ]
+    },
+    {
+        "id": "29030417b9d1d662",
+        "type": "function",
+        "z": "196f939f373c1d53",
+        "name": "check error",
+        "func": "\"use strict\";\n\nif (msg.status === 'error') {\n    node.error(`[${msg.errorCode}] ${msg.errorText}`, msg);\n    return msg;\n}\n\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 450,
+        "y": 180,
+        "wires": [
+            [
+                "52bbf63e42364fa8"
+            ]
+        ]
+    },
+    {
+        "id": "9a260c118bb1a788",
+        "type": "function",
+        "z": "196f939f373c1d53",
+        "name": "echo UC/bye",
+        "func": "\"use strict\";\n\nif (msg.payload === 'bye') {\n    return [{\n        sessionId: msg.sessionId,\n    },\n        null\n    ];\n}\n\nconst payload = msg.payload.toUpperCase();\nreturn [\n    null, {\n        sessionId: msg.sessionId,\n        command: 'send',\n        payload,\n    }\n];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 450,
+        "y": 220,
+        "wires": [
+            [
+                "52bbf63e42364fa8"
+            ],
+            [
+                "016a279254b7e93f"
+            ]
+        ]
+    },
+    {
+        "id": "1c2429d34e04db1b",
+        "type": "inject",
+        "z": "196f939f373c1d53",
+        "name": "",
+        "props": [
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 55,
+        "y": 380,
+        "wires": [
+            [
+                "6e81e103f8f5b676"
+            ]
+        ],
+        "l": false
+    },
+    {
+        "id": "ab83d5b3774931ec",
+        "type": "function",
+        "z": "196f939f373c1d53",
+        "name": "check error",
+        "func": "\"use strict\";\n\nif (msg.status === 'error') {\n    node.error(`[${msg.errorCode}] ${msg.errorText}`, msg);\n    return msg;\n}\n\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 410,
+        "y": 360,
+        "wires": [
+            [
+                "cb3955d9f0ef62d8"
+            ]
+        ]
+    },
+    {
+        "id": "4d9277fc5dc9b8de",
+        "type": "function",
+        "z": "196f939f373c1d53",
+        "name": "test",
+        "func": "\"use strict\";\n\nreturn {\n    sessionId: msg.sessionId,\n    command: 'send',\n    payload: 'test',\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 170,
+        "y": 480,
+        "wires": [
+            [
+                "44a97c2d1e628a13"
+            ]
+        ]
+    },
+    {
+        "id": "d46fbb77010f1aac",
+        "type": "function",
+        "z": "196f939f373c1d53",
+        "name": "check error",
+        "func": "\"use strict\";\n\nif (msg.status === 'error') {\n    node.error(`[${msg.errorCode}] ${msg.errorText}`, msg);\n    return msg;\n}\n\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 530,
+        "y": 440,
+        "wires": [
+            [
+                "10721476a4a5f185"
+            ]
+        ]
+    },
+    {
+        "id": "1dc19cb266a003fb",
+        "type": "function",
+        "z": "196f939f373c1d53",
+        "name": "bye",
+        "func": "\"use strict\";\n\nreturn {\n    sessionId: msg.sessionId,\n    command: 'send',\n    payload: 'bye',\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 170,
+        "y": 580,
+        "wires": [
+            [
+                "65cc6422fbf8e2ad"
+            ]
+        ]
+    },
+    {
+        "id": "372cd2a049025ea3",
+        "type": "function",
+        "z": "196f939f373c1d53",
+        "name": "check error",
+        "func": "\"use strict\";\n\nif (msg.status === 'error') {\n    node.error(`[${msg.errorCode}] ${msg.errorText}`, msg);\n    return msg;\n}\n\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 530,
+        "y": 540,
+        "wires": [
+            [
+                "2be4418edaf5ea5b"
+            ]
+        ]
+    },
+    {
+        "id": "66f004ffc8e44299",
+        "type": "tcp-listen",
+        "z": "196f939f373c1d53",
+        "name": "",
+        "host": "",
+        "port": "2323",
+        "mode": "line",
+        "waitFor": "",
+        "timeout": 0,
+        "x": 180,
+        "y": 120,
+        "wires": [
+            [
+                "b501ca109a5d6f08"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "016a279254b7e93f",
+        "type": "tcp-send",
+        "z": "196f939f373c1d53",
+        "name": "",
+        "waitFor": "",
+        "lineTerminator": "crlf",
+        "timeout": "",
+        "x": 180,
+        "y": 220,
+        "wires": [
+            [
+                "29030417b9d1d662"
+            ],
+            [
+                "9a260c118bb1a788"
+            ]
+        ]
+    },
+    {
+        "id": "52bbf63e42364fa8",
+        "type": "tcp-disconnect",
+        "z": "196f939f373c1d53",
+        "name": "",
+        "x": 660,
+        "y": 200,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "6e81e103f8f5b676",
+        "type": "tcp-connect",
+        "z": "196f939f373c1d53",
+        "name": "",
+        "host": "127.0.0.1",
+        "port": "2323",
+        "mode": "line",
+        "waitFor": "",
+        "timeout": 0,
+        "autoConnect": false,
+        "x": 190,
+        "y": 380,
+        "wires": [
+            [
+                "ab83d5b3774931ec"
+            ],
+            [
+                "4d9277fc5dc9b8de"
+            ]
+        ]
+    },
+    {
+        "id": "cb3955d9f0ef62d8",
+        "type": "tcp-disconnect",
+        "z": "196f939f373c1d53",
+        "name": "",
+        "x": 660,
+        "y": 360,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "10721476a4a5f185",
+        "type": "tcp-disconnect",
+        "z": "196f939f373c1d53",
+        "name": "",
+        "x": 720,
+        "y": 440,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "2be4418edaf5ea5b",
+        "type": "tcp-disconnect",
+        "z": "196f939f373c1d53",
+        "name": "",
+        "x": 760,
+        "y": 560,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "44a97c2d1e628a13",
+        "type": "tcp-send",
+        "z": "196f939f373c1d53",
+        "name": "",
+        "waitFor": "",
+        "lineTerminator": "crlf",
+        "timeout": "",
+        "x": 320,
+        "y": 480,
+        "wires": [
+            [
+                "d46fbb77010f1aac"
+            ],
+            [
+                "1dc19cb266a003fb"
+            ]
+        ]
+    },
+    {
+        "id": "65cc6422fbf8e2ad",
+        "type": "tcp-send",
+        "z": "196f939f373c1d53",
+        "name": "",
+        "waitFor": "",
+        "lineTerminator": "crlf",
+        "timeout": "",
+        "x": 320,
+        "y": 580,
+        "wires": [
+            [
+                "372cd2a049025ea3"
+            ],
+            [
+                "2be4418edaf5ea5b"
+            ]
+        ]
+    }
+]

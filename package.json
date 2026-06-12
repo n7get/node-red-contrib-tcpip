@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-tcpip",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Node-RED nodes for managing multiple simultaneous TCP/IP and UDP connections with sessionId-based routing, status updates and structured error envelopes.",
   "keywords": [
     "node-red",
@@ -14,7 +14,19 @@
     "session"
   ],
   "license": "MIT",
-  "author": "node-red-contrib-tcpip contributors",
+  "author": {
+    "name": "Robert Ambrose",
+    "email": "npm@muttsoft.com",
+    "url": "https://github.com/n7get/node-red-contrib-tcpip"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/n7get/node-red-contrib-tcpip.git"
+  },
+  "homepage": "https://github.com/n7get/node-red-contrib-ax25",
+  "bugs": {
+    "url": "https://github.com/n7get/node-red-contrib-ax25/issues"
+  },
   "engines": {
     "node": ">=20"
   },
@@ -35,9 +47,5 @@
       "udp-in": "nodes/udp-in.js",
       "udp-out": "nodes/udp-out.js"
     }
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/example/node-red-contrib-tcpip.git"
   }
 }

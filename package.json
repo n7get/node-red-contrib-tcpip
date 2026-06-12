@@ -29,6 +29,7 @@
   "node-red": {
     "nodes": {
       "tcp-connect": "nodes/connect.js",
+      "tcp-listen": "nodes/listen.js",
       "tcp-send": "nodes/send.js",
       "tcp-disconnect": "nodes/disconnect.js",
       "udp-in": "nodes/udp-in.js",

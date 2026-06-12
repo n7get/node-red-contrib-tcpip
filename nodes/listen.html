@@ -1,0 +1,91 @@
+<script type="text/javascript">
+  RED.nodes.registerType("tcp-listen", {
+    category: "tcpip",
+    color: "#4A90D9",
+    defaults: {
+      name: { value: "" },
+      host: { value: "" },
+      port: { value: "", validate: RED.validators.number() },
+      mode: { value: "binary" },
+      waitFor: { value: "" },
+      timeout: { value: 0, validate: RED.validators.number() }
+    },
+    inputs: 0,
+    outputs: 2,
+    outputLabels: ["events", "data"],
+    icon: "font-awesome/fa-server",
+    label: function () {
+      return this.name || (this.port ? "tcp listen :" + this.port : "tcp listen");
+    },
+    paletteLabel: "tcp listen"
+  });
+</script>
+
+<script type="text/html" data-template-name="tcp-listen">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name" />
+  </div>
+  <div class="form-row">
+    <label for="node-input-host"><i class="fa fa-server"></i> Host</label>
+    <input type="text" id="node-input-host" placeholder="bind address (default: 0.0.0.0 — all interfaces)" />
+  </div>
+  <div class="form-row">
+    <label for="node-input-port"><i class="fa fa-hashtag"></i> Port</label>
+    <input type="text" id="node-input-port" placeholder="listen port (required)" />
+  </div>
+  <div class="form-row">
+    <label for="node-input-mode"><i class="fa fa-exchange"></i> Mode</label>
+    <select id="node-input-mode">
+      <option value="binary">Binary (Buffer)</option>
+      <option value="line">Line (String, split on CR/LF)</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label for="node-input-waitFor"><i class="fa fa-filter"></i> Wait For</label>
+    <input type="text" id="node-input-waitFor" placeholder="optional RegExp (line mode) e.g. ^OK$" />
+  </div>
+  <div class="form-row">
+    <label for="node-input-timeout"><i class="fa fa-clock-o"></i> Timeout</label>
+    <input type="text" id="node-input-timeout" placeholder="inactivity timeout in ms (0 = none)" />
+  </div>
+</script>
+
+<script type="text/html" data-help-name="tcp-listen">
+  <p>Listens for inbound <b>TCP/IPv4</b> connections and allocates a
+  <code>sessionId</code> for each one, usable by the <b>tcp send</b> and
+  <b>tcp disconnect</b> nodes.</p>
+
+  <h3>Outputs</h3>
+  <ol class="node-ports">
+    <li>Events — lifecycle envelopes: <code>listening</code>, <code>connected</code>,
+      <code>disconnected</code>, <code>timeout</code>, <code>error</code> and
+      <code>closed</code>.</li>
+    <li>Data — inbound data envelopes (<code>event:"data"</code>). Payload is a
+      <code>Buffer</code> in binary mode or a <code>String</code> in line mode.</li>
+  </ol>
+
+  <h3>Details</h3>
+  <p>The server binds automatically on deploy and stops on redeploy or shutdown.
+  A <code>listening</code> event is emitted once the port is bound. Each new
+  inbound connection produces a <code>connected</code> event on output 1 carrying
+  <code>sessionId</code>, <code>remoteHost</code>, <code>remotePort</code>,
+  <code>localHost</code> and <code>localPort</code>.</p>
+
+  <p>To <b>reject</b> a connection, wire the events output (optionally via a
+  function node that inspects <code>remoteHost</code>/<code>remotePort</code>)
+  into a <b>tcp disconnect</b> node. Sessions that are not explicitly disconnected
+  remain open for use with <b>tcp send</b>.</p>
+
+  <p>On redeploy or shutdown all sessions created by this node are closed and
+  removed from the store.</p>
+
+  <p>Every output message carries <code>timestamp</code> and <code>status</code>.
+  In <i>line</i> mode the stream is split on <code>\r\n</code>, <code>\n</code>
+  or <code>\r</code>; an optional <b>Wait For</b> RegExp buffers lines until a
+  match.</p>
+
+  <p><b>Note:</b> The TCP three-way handshake is completed by the OS before this
+  node receives the connection. Rejection via <b>tcp disconnect</b> sends a TCP
+  RST to the remote peer.</p>
+</script>
